@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d1a">
+<title>WK 2026 Goktracker</title>
+<style>
+  :root {
+    --bg: #0d0d1a; --card: #161628; --border: #2a2a45;
+    --oranje: #ff6b00; --groen: #00c97a; --rood: #ff4d6a;
+    --tekst: #f0f0f0; --dim: #7070a0; --accent: #1e1e38;
+    --paars: #9f7aea; --radius: 14px; --font: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--tekst); font-family: var(--font); min-height: 100svh; overscroll-behavior: none; }
+
+  /* NAAM SCHERM */
+  #naam-scherm { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100svh; padding: 32px 24px; text-align: center; }
+  #naam-scherm .logo { font-size: 48px; margin-bottom: 16px; }
+  #naam-scherm h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  #naam-scherm p { font-size: 14px; color: var(--dim); margin-bottom: 28px; }
+  #naam-input { width: 100%; background: var(--accent); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; font-size: 18px; font-weight: 700; color: var(--tekst); font-family: var(--font); outline: none; text-align: center; margin-bottom: 12px; }
+  #naam-input:focus { border-color: var(--oranje); }
+  .naam-suggesties { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 24px; }
+  .naam-sug { background: var(--accent); border: 1px solid var(--border); border-radius: 20px; padding: 7px 16px; font-size: 13px; font-weight: 600; color: var(--dim); cursor: pointer; }
+  #naam-btn { width: 100%; background: var(--oranje); color: #fff; border: none; border-radius: 12px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: var(--font); }
+  #naam-btn:disabled { opacity: 0.4; }
+
+  #app { display: none; }
+
+  /* TABS */
+  .top-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 99; }
+  .top-tab { flex: 1; padding: 13px 4px; text-align: center; font-size: 12px; font-weight: 600; color: var(--dim); cursor: pointer; border-bottom: 2px solid transparent; }
+  .top-tab.active { color: var(--oranje); border-bottom-color: var(--oranje); }
+
+  /* HEADER TRACKER */
+  header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 18px 10px; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .header-left { display: flex; align-items: center; gap: 8px; }
+  .logo-text { font-size: 17px; font-weight: 700; }
+  .logo-sub { font-size: 11px; color: var(--dim); }
+  .naam-badge { background: var(--oranje); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; cursor: pointer; }
+  .saldo-banner { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .saldo-item { background: var(--accent); border-radius: 10px; padding: 8px 10px; text-align: center; }
+  .saldo-label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .saldo-value { font-size: 17px; font-weight: 700; margin-top: 1px; }
+  .pos { color: var(--groen); } .neg { color: var(--rood); } .neu { color: var(--tekst); }
+
+  /* FASE TABS */
+  .fase-nav { display: flex; overflow-x: auto; gap: 6px; padding: 12px 18px 0; scrollbar-width: none; background: var(--bg); }
+  .fase-nav::-webkit-scrollbar { display: none; }
+  .fase-tab { flex-shrink: 0; padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--dim); border: none; cursor: pointer; }
+  .fase-tab.active { background: var(--oranje); color: #fff; }
+
+  /* DAGLIJST */
+  main { padding: 14px 14px 100px; }
+  .dag-kaart { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .dag-kaart.ingevuld { border-color: var(--oranje); }
+  .dag-kaart.finale { border-color: gold; }
+  .dag-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; cursor: pointer; user-select: none; }
+  .dag-info { display: flex; align-items: center; gap: 10px; }
+  .dag-datum { font-size: 15px; font-weight: 700; }
+  .dag-fase { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .fase-groep  { background: rgba(255,107,0,0.18);  color: #ff8c3a; }
+  .fase-r32    { background: rgba(99,179,237,0.18);  color: #63b3ed; }
+  .fase-r16    { background: rgba(72,187,120,0.18);  color: #48bb78; }
+  .fase-kwart  { background: rgba(237,100,166,0.18); color: #ed64a6; }
+  .fase-semi   { background: rgba(159,122,234,0.18); color: #9f7aea; }
+  .fase-derde  { background: rgba(246,224,94,0.18);  color: #d4a017; }
+  .fase-finale { background: rgba(255,215,0,0.25);   color: gold; }
+  .dag-resultaat { font-size: 13px; font-weight: 600; }
+  .pijl { font-size: 12px; color: var(--dim); display: inline-block; transition: transform 0.2s; }
+  .open .pijl { transform: rotate(180deg); }
+  .dag-form { display: none; padding: 0 14px 14px; border-top: 1px solid var(--border); }
+  .dag-form.zichtbaar { display: block; }
+  .form-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .form-veld label { display: block; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; font-weight: 600; }
+  .form-veld input { width: 100%; background: var(--accent); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 17px; font-weight: 700; color: var(--tekst); font-family: var(--font); -webkit-appearance: none; outline: none; }
+  .form-veld input:focus { border-color: var(--oranje); }
+  .form-veld input.groen { border-color: var(--groen); color: var(--groen); }
+  .form-veld input.rood  { border-color: var(--rood);  color: var(--rood); }
+  .snelkeuze { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .snelkeuze button { background: var(--accent); border: 1px solid var(--border); border-radius: 8px; color: var(--dim); font-size: 12px; font-weight: 600; padding: 5px 11px; cursor: pointer; font-family: var(--font); }
+  .opslaan-btn { margin-top: 14px; width: 100%; background: var(--oranje); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font); }
+  .opslaan-btn:disabled { opacity: 0.5; }
+  .wis-btn { margin-top: 8px; width: 100%; background: transparent; color: var(--dim); border: 1px solid var(--border); border-radius: 12px; padding: 11px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+
+  /* WK BETS */
+  #bets-view { display: none; padding-bottom: 100px; }
+  .bets-header { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .bets-header-title { font-size: 17px; font-weight: 700; }
+  .bets-header-sub { font-size: 12px; color: var(--dim); margin-top: 2px; }
+  .bets-saldo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 14px 0; }
+  .bets-saldo .saldo-item { background: var(--accent); border-radius: 10px; padding: 8px 10px; text-align: center; }
+  .bets-lijst { padding: 12px 14px; }
+  .bet-kaart { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+  .bet-kaart.ingevuld { border-color: var(--paars); }
+  .bet-kaart-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; cursor: pointer; }
+  .bet-omschrijving { font-size: 14px; font-weight: 700; flex: 1; }
+  .bet-netto-preview { font-size: 13px; font-weight: 600; margin-right: 8px; }
+  .bet-form { display: none; padding: 0 14px 14px; border-top: 1px solid var(--border); }
+  .bet-form.zichtbaar { display: block; }
+  .nieuwe-bet-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 28px); margin: 0 14px; background: var(--accent); border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px; font-size: 14px; font-weight: 600; color: var(--dim); cursor: pointer; font-family: var(--font); }
+  .nieuwe-bet-form { display: none; background: var(--card); border: 1px solid var(--paars); border-radius: var(--radius); margin: 0 14px; padding: 16px; }
+  .nieuwe-bet-form.zichtbaar { display: block; }
+  .nieuwe-bet-form input { width: 100%; background: var(--accent); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 15px; color: var(--tekst); font-family: var(--font); outline: none; margin-bottom: 10px; }
+  .nieuwe-bet-form input:focus { border-color: var(--paars); }
+  .nieuwe-bet-opslaan { width: 100%; background: var(--paars); color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); }
+
+  /* SCOREBORD */
+  #scorebord { display: none; padding: 0 0 100px; }
+  .score-top { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .score-top-title { font-size: 18px; font-weight: 700; }
+  .score-top-time { font-size: 12px; color: var(--dim); }
+  .refresh-btn { background: none; border: 1px solid var(--border); border-radius: 20px; color: var(--dim); font-size: 12px; font-weight: 600; padding: 6px 14px; cursor: pointer; font-family: var(--font); }
+  .score-lijst { padding: 12px 14px 4px; }
+  .score-rij { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--radius); margin-bottom: 8px; background: var(--card); border: 1px solid var(--border); }
+  .score-rij.jij { border-color: var(--oranje); }
+  .score-rij.eerste { border-color: rgba(255,215,0,0.4); }
+  .score-positie { font-size: 13px; font-weight: 700; color: var(--dim); width: 24px; flex-shrink: 0; text-align: center; }
+  .score-positie.p1 { color: #ffd700; font-size: 18px; }
+  .score-positie.p2 { color: #c0c0c0; font-size: 16px; }
+  .score-positie.p3 { color: #cd7f32; font-size: 16px; }
+  .score-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+  .score-midden { flex: 1; min-width: 0; }
+  .score-naam-tekst { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .score-naam-sub { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .score-kolommen { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .score-netto { font-size: 16px; font-weight: 700; }
+  .score-netto-sub { font-size: 11px; color: var(--dim); text-align: right; }
+  .score-bets-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(159,122,234,0.2); color: var(--paars); }
+  .score-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 2px; width: 60px; overflow: hidden; }
+  .score-bar { height: 100%; border-radius: 2px; }
+  .score-leeg { text-align: center; padding: 60px 20px; color: var(--dim); font-size: 14px; line-height: 1.6; }
+  .score-sectie-titel { font-size: 11px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 14px 8px; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 40px; color: var(--dim); font-size: 14px; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--oranje); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--accent); border: 1px solid var(--border); border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 600; z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="naam-scherm">
+  <div class="logo">⚽</div>
+  <h1>WK 2026 Goktracker</h1>
+  <p>Wie ben jij?</p>
+  <input id="naam-input" type="text" placeholder="Jouw naam" maxlength="20" autocomplete="off">
+  <div class="naam-suggesties" id="naam-sugs"></div>
+  <button id="naam-btn" disabled>Doorgaan →</button>
+</div>
+
+<div id="app">
+  <div class="top-tabs">
+    <div class="top-tab active" id="tab-tracker" onclick="wisselTab('tracker')">⚽ Dagelijks</div>
+    <div class="top-tab" id="tab-bets" onclick="wisselTab('bets')">🎯 WK Bets</div>
+    <div class="top-tab" id="tab-score" onclick="wisselTab('score')">🏆 Scorebord</div>
+  </div>
+
+  <!-- TRACKER -->
+  <div id="tracker-view">
+    <header>
+      <div class="header-top">
+        <div class="header-left">
+          <span style="font-size:20px">⚽</span>
+          <div><div class="logo-text">WK 2026</div><div class="logo-sub">Goktracker</div></div>
+        </div>
+        <div class="naam-badge" id="naam-badge" onclick="wisselNaam()">...</div>
+      </div>
+      <div class="saldo-banner">
+        <div class="saldo-item"><div class="saldo-label">Ingelegd</div><div class="saldo-value neu" id="totaal-inzet">€0</div></div>
+        <div class="saldo-item"><div class="saldo-label">Teruggekregen</div><div class="saldo-value pos" id="totaal-terug">€0</div></div>
+        <div class="saldo-item"><div class="saldo-label">Netto</div><div class="saldo-value neu" id="totaal-netto">€0</div></div>
+      </div>
+    </header>
+    <nav class="fase-nav" id="fase-nav"></nav>
+    <main id="daglijst"></main>
+  </div>
+
+  <!-- WK BETS -->
+  <div id="bets-view">
+    <div class="bets-header">
+      <div>
+        <div class="bets-header-title">🎯 WK Bets</div>
+        <div class="bets-header-sub">Losse gokken voor het hele toernooi</div>
+      </div>
+      <div class="naam-badge" style="cursor:default" id="bets-naam-badge">...</div>
+    </div>
+    <div class="bets-saldo">
+      <div class="saldo-item"><div class="saldo-label">Ingelegd</div><div class="saldo-value neu" id="bets-inzet">€0</div></div>
+      <div class="saldo-item"><div class="saldo-label">Netto</div><div class="saldo-value neu" id="bets-netto">€0</div></div>
+    </div>
+    <div class="bets-lijst" id="bets-lijst"></div>
+    <button class="nieuwe-bet-btn" id="nieuwe-bet-btn" onclick="toggleNieuweBetForm()">+ Nieuwe bet toevoegen</button>
+    <div class="nieuwe-bet-form" id="nieuwe-bet-form">
+      <div class="form-veld" style="margin-bottom:0">
+        <label>Omschrijving</label>
+        <input type="text" id="nieuwe-bet-omschrijving" placeholder="bijv. Nederland haalt halve finale" maxlength="80">
+      </div>
+      <div class="form-rij" style="margin-top:0">
+        <div class="form-veld">
+          <label>Inzet (€)</label>
+          <input type="number" inputmode="decimal" placeholder="0" id="nieuwe-bet-inzet">
+        </div>
+        <div></div>
+      </div>
+      <button class="nieuwe-bet-opslaan" onclick="voegBetToe()">Opslaan ✓</button>
+    </div>
+  </div>
+
+  <!-- SCOREBORD -->
+  <div id="scorebord">
+    <div class="score-top">
+      <div>
+        <div class="score-top-title">🏆 Scorebord</div>
+        <div class="score-top-time" id="score-tijd">Laden...</div>
+      </div>
+      <button class="refresh-btn" onclick="laadScores()">↻ Vernieuwen</button>
+    </div>
+    <div id="scores-inhoud"><div class="loading"><span class="spinner"></span>Laden...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL = "https://bnukvvqqwkbnqvxziuiv.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudWt2dnFxd2tibnF2eHppdWl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDI3ODEsImV4cCI6MjA5NjY3ODc4MX0.5Q1Hw8HhPT91zXBnzM4s0759jbgr4KP3CGRTnsZDANU";
+
+const DAGEN = [
+  {id:"d01",datum:"do 11 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d02",datum:"vr 12 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d03",datum:"za 13 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d04",datum:"zo 14 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d05",datum:"ma 15 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d06",datum:"di 16 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d07",datum:"wo 17 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d08",datum:"do 18 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d09",datum:"vr 19 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d10",datum:"za 20 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d11",datum:"zo 21 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d12",datum:"ma 22 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d13",datum:"di 23 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d14",datum:"wo 24 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d15",datum:"do 25 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d16",datum:"vr 26 jun",fase:"groep",faseLabel:"Groepsfase"},
+  {id:"d17",datum:"za 27 jun",fase:"groep",faseLabel:"Groepsfase"},{id:"d18",datum:"zo 28 jun",fase:"r32",faseLabel:"Ronde van 32"},
+  {id:"d19",datum:"ma 29 jun",fase:"r32",faseLabel:"Ronde van 32"},{id:"d20",datum:"di 30 jun",fase:"r32",faseLabel:"Ronde van 32"},
+  {id:"d21",datum:"wo 1 jul",fase:"r32",faseLabel:"Ronde van 32"},{id:"d22",datum:"do 2 jul",fase:"r32",faseLabel:"Ronde van 32"},
+  {id:"d23",datum:"vr 3 jul",fase:"r32",faseLabel:"Ronde van 32"},{id:"d24",datum:"za 4 jul",fase:"r16",faseLabel:"Ronde van 16"},
+  {id:"d25",datum:"zo 5 jul",fase:"r16",faseLabel:"Ronde van 16"},{id:"d26",datum:"ma 6 jul",fase:"r16",faseLabel:"Ronde van 16"},
+  {id:"d27",datum:"di 7 jul",fase:"r16",faseLabel:"Ronde van 16"},{id:"d28",datum:"do 9 jul",fase:"kwart",faseLabel:"Kwartfinale"},
+  {id:"d29",datum:"vr 10 jul",fase:"kwart",faseLabel:"Kwartfinale"},{id:"d30",datum:"za 11 jul",fase:"kwart",faseLabel:"Kwartfinale"},
+  {id:"d31",datum:"di 14 jul",fase:"semi",faseLabel:"Halve finale"},{id:"d32",datum:"wo 15 jul",fase:"semi",faseLabel:"Halve finale"},
+  {id:"d33",datum:"za 18 jul",fase:"derde",faseLabel:"3e plaats"},{id:"d34",datum:"zo 19 jul",fase:"finale",faseLabel:"🏆 FINALE"},
+];
+const FASEN = [
+  {key:"alle",label:"Alle dagen"},{key:"groep",label:"Groepsfase"},
+  {key:"r32",label:"R. van 32"},{key:"r16",label:"R. van 16"},
+  {key:"kwart",label:"Kwartfinale"},{key:"semi",label:"Halve finale"},{key:"finale",label:"Finale"},
+];
+const SNELKEUZES = [5,10,20,50];
+
+let mijnNaam = localStorage.getItem("wk2026_naam") || "";
+let data = {};
+let betData = [];
+let actiefeFase = "alle";
+let openKaart = null;
+let openBet = null;
+let huidigTab = "tracker";
+
+// ── SUPABASE ──────────────────────────────────────────────────────────────
+async function supaFetch(path, method="GET", body=null) {
+  const opts = { method, headers: { "apikey": SUPA_KEY, "Authorization": "Bearer "+SUPA_KEY, "Content-Type": "application/json", "Prefer": method==="POST"?"return=representation":"return=minimal" } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPA_URL+"/rest/v1/"+path, opts);
+  if (method==="GET" || (method==="POST" && opts.headers["Prefer"]==="return=representation")) return res.json();
+  return res;
+}
+
+async function slaServerOp(dagId, inzet, terug, verlies) {
+  const netto = terug > 0 ? terug - inzet : -verlies;
+  await supaFetch("gokken?on_conflict=naam,dag_id", "POST", { naam: mijnNaam, dag_id: dagId, inzet, terug, verlies, netto });
+}
+async function wisServerRij(dagId) {
+  await supaFetch(`gokken?naam=eq.${encodeURIComponent(mijnNaam)}&dag_id=eq.${dagId}`, "DELETE");
+}
+async function laadMijnData() {
+  try {
+    const rows = await supaFetch(`gokken?naam=eq.${encodeURIComponent(mijnNaam)}&select=dag_id,inzet,terug,verlies`);
+    data = {};
+    (rows||[]).forEach(r => { data[r.dag_id] = {inzet:r.inzet, terug:r.terug, verlies:r.verlies}; });
+  } catch { try { data = JSON.parse(localStorage.getItem("wk2026_"+mijnNaam)||"{}"); } catch {} }
+}
+
+// ── WK BETS ───────────────────────────────────────────────────────────────
+async function laadMijnBets() {
+  try {
+    const rows = await supaFetch(`wk_bets?naam=eq.${encodeURIComponent(mijnNaam)}&select=id,omschrijving,inzet,terug,verlies&order=id.asc`);
+    betData = rows || [];
+  } catch { betData = []; }
+}
+
+async function voegBetToe() {
+  const omschrijving = document.getElementById("nieuwe-bet-omschrijving").value.trim();
+  const inzet = parseFloat(document.getElementById("nieuwe-bet-inzet").value)||0;
+  if (!omschrijving) { showToast("Vul een omschrijving in"); return; }
+  try {
+    const rows = await supaFetch("wk_bets", "POST", { naam: mijnNaam, omschrijving, inzet, terug: 0, verlies: 0 });
+    document.getElementById("nieuwe-bet-omschrijving").value = "";
+    document.getElementById("nieuwe-bet-inzet").value = "";
+    document.getElementById("nieuwe-bet-form").classList.remove("zichtbaar");
+    await laadMijnBets();
+    bouwBetsLijst();
+    updateBetsSaldo();
+    showToast("Bet toegevoegd ✓");
+  } catch { showToast("Fout bij opslaan"); }
+}
+
+async function slaBetstOp(id, inzet, terug, verlies) {
+  await supaFetch(`wk_bets?id=eq.${id}&naam=eq.${encodeURIComponent(mijnNaam)}`, "PATCH", { inzet, terug, verlies });
+}
+async function wisBet(id) {
+  await supaFetch(`wk_bets?id=eq.${id}&naam=eq.${encodeURIComponent(mijnNaam)}`, "DELETE");
+}
+
+function toggleNieuweBetForm() {
+  const f = document.getElementById("nieuwe-bet-form");
+  f.classList.toggle("zichtbaar");
+  if (f.classList.contains("zichtbaar")) document.getElementById("nieuwe-bet-omschrijving").focus();
+}
+
+function updateBetsSaldo() {
+  let inzet=0, terug=0, verlies=0;
+  betData.forEach(b => { inzet += parseFloat(b.inzet)||0; terug += parseFloat(b.terug)||0; verlies += parseFloat(b.verlies)||0; });
+  const netto = terug - inzet;
+  document.getElementById("bets-inzet").textContent = fmt(inzet);
+  const nEl = document.getElementById("bets-netto");
+  nEl.textContent = (netto>=0?"+":"-")+fmt(netto);
+  nEl.className = "saldo-value "+(netto>0?"pos":netto<0?"neg":"neu");
+}
+
+function bouwBetsLijst() {
+  const lijst = document.getElementById("bets-lijst");
+  lijst.innerHTML = "";
+  if (!betData.length) {
+    lijst.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--dim);font-size:14px">Nog geen bets. Voeg er een toe!</div>';
+    return;
+  }
+  betData.forEach(bet => {
+    const isOpen = openBet === bet.id;
+    const terug = parseFloat(bet.terug)||0;
+    const verlies = parseFloat(bet.verlies)||0;
+    const inzet = parseFloat(bet.inzet)||0;
+    const netto = terug > 0 ? terug - inzet : verlies > 0 ? -verlies : null;
+    const heeftResultaat = terug > 0 || verlies > 0;
+
+    const kaart = document.createElement("div");
+    kaart.className = "bet-kaart"+(heeftResultaat?" ingevuld":"");
+
+    const preview = heeftResultaat
+      ? `<span class="bet-netto-preview" style="color:${netto>0?"var(--groen)":netto<0?"var(--rood)":"var(--dim)"}">${netto>=0?"+":"-"}${fmt(netto)}</span>` : "";
+
+    kaart.innerHTML = `
+      <div class="bet-kaart-header" id="bet-hdr-${bet.id}">
+        <span class="bet-omschrijving">${bet.omschrijving}</span>
+        <div style="display:flex;align-items:center">${preview}<span class="pijl" style="${isOpen?"transform:rotate(180deg)":""}">▾</span></div>
+      </div>
+      <div class="bet-form${isOpen?" zichtbaar":""}" id="bet-form-${bet.id}">
+        <div class="form-rij">
+          <div class="form-veld">
+            <label>Inzet (€)</label>
+            <input type="number" inputmode="decimal" placeholder="0" id="bet-inzet-${bet.id}" value="${bet.inzet||""}">
+            <div class="snelkeuze" id="bet-snel-${bet.id}"></div>
+          </div>
+          <div class="form-veld">
+            <label>Teruggekregen (€)</label>
+            <input type="number" inputmode="decimal" placeholder="0" id="bet-terug-${bet.id}" value="${bet.terug||""}" class="${bet.terug?"groen":""}">
+          </div>
+        </div>
+        <div class="form-rij" style="margin-top:10px">
+          <div class="form-veld">
+            <label>Verlies (€)</label>
+            <input type="number" inputmode="decimal" placeholder="0" id="bet-verlies-${bet.id}" value="${bet.verlies||""}" class="${bet.verlies?"rood":""}">
+          </div>
+          <div></div>
+        </div>
+        <button class="opslaan-btn" style="background:var(--paars)" id="bet-ops-${bet.id}">Opslaan ✓</button>
+        <button class="wis-btn" id="bet-wis-${bet.id}">Verwijder bet</button>
+      </div>`;
+
+    lijst.appendChild(kaart);
+
+    const snelDiv = document.getElementById("bet-snel-"+bet.id);
+    SNELKEUZES.forEach(v => {
+      const btn = document.createElement("button");
+      btn.textContent = "€"+v;
+      btn.onclick = e => { e.stopPropagation(); document.getElementById("bet-inzet-"+bet.id).value = v; };
+      snelDiv.appendChild(btn);
+    });
+
+    document.getElementById("bet-hdr-"+bet.id).onclick = () => {
+      openBet = openBet===bet.id ? null : bet.id;
+      bouwBetsLijst();
+    };
+
+    document.getElementById("bet-terug-"+bet.id).oninput = function() { this.className = this.value?"groen":""; };
+    document.getElementById("bet-verlies-"+bet.id).oninput = function() { this.className = this.value?"rood":""; };
+
+    document.getElementById("bet-ops-"+bet.id).onclick = async e => {
+      e.stopPropagation();
+      const btn = e.target; btn.disabled = true; btn.textContent = "Opslaan...";
+      const i = parseFloat(document.getElementById("bet-inzet-"+bet.id).value)||0;
+      const t = parseFloat(document.getElementById("bet-terug-"+bet.id).value)||0;
+      const v = parseFloat(document.getElementById("bet-verlies-"+bet.id).value)||0;
+      try { await slaBetstOp(bet.id, i, t, v); showToast("Opgeslagen ✓"); }
+      catch { showToast("Fout bij opslaan"); }
+      await laadMijnBets(); openBet = null; bouwBetsLijst(); updateBetsSaldo();
+    };
+
+    document.getElementById("bet-wis-"+bet.id).onclick = async e => {
+      e.stopPropagation();
+      if (!confirm("Bet verwijderen?")) return;
+      try { await wisBet(bet.id); showToast("Verwijderd"); }
+      catch { showToast("Fout bij verwijderen"); }
+      await laadMijnBets(); openBet = null; bouwBetsLijst(); updateBetsSaldo();
+    };
+  });
+}
+
+// ── SCOREBORD ─────────────────────────────────────────────────────────────
+const AVATAR_KLEUREN = [
+  ["#ff6b00","#3a1800"],["#00c97a","#003d24"],["#63b3ed","#0a2a40"],
+  ["#ed64a6","#3d0a24"],["#9f7aea","#2a1450"],["#ffd700","#3d3300"],
+];
+function avatarKleur(naam) {
+  let h = 0; for (let c of naam) h = (h*31+c.charCodeAt(0))&0xffff;
+  return AVATAR_KLEUREN[h%AVATAR_KLEUREN.length];
+}
+function initialen(naam) {
+  const p = naam.trim().split(" ");
+  return p.length>1 ? (p[0][0]+p[1][0]).toUpperCase() : naam.slice(0,2).toUpperCase();
+}
+
+async function laadScores() {
+  document.getElementById("scores-inhoud").innerHTML = '<div class="loading"><span class="spinner"></span>Laden...</div>';
+  try {
+    const [dagRows, betRows] = await Promise.all([
+      supaFetch("gokken?select=naam,inzet,terug"),
+      supaFetch("wk_bets?select=naam,inzet,terug,verlies"),
+    ]);
+
+    const totalen = {};
+    (dagRows||[]).forEach(r => {
+      if (!totalen[r.naam]) totalen[r.naam] = {dagInzet:0,dagTerug:0,betNetto:0,dagen:0};
+      totalen[r.naam].dagInzet += parseFloat(r.inzet)||0;
+      totalen[r.naam].dagTerug += parseFloat(r.terug)||0;
+      totalen[r.naam].dagen++;
+    });
+    (betRows||[]).forEach(r => {
+      if (!totalen[r.naam]) totalen[r.naam] = {dagInzet:0,dagTerug:0,betNetto:0,dagen:0};
+      const terug = parseFloat(r.terug)||0;
+      const verlies = parseFloat(r.verlies)||0;
+      const inzet = parseFloat(r.inzet)||0;
+      totalen[r.naam].betNetto += terug>0 ? terug-inzet : -verlies;
+    });
+
+    const gesorteerd = Object.entries(totalen)
+      .map(([naam,t]) => ({ naam, dagNetto: t.dagTerug-t.dagInzet, betNetto: t.betNetto, totaal: (t.dagTerug-t.dagInzet)+t.betNetto, dagen: t.dagen }))
+      .sort((a,b) => b.totaal-a.totaal);
+
+    document.getElementById("score-tijd").textContent = "Bijgewerkt om "+new Date().toLocaleTimeString("nl-NL",{hour:"2-digit",minute:"2-digit"});
+
+    if (!gesorteerd.length) {
+      document.getElementById("scores-inhoud").innerHTML = '<div class="score-leeg">Nog niemand heeft iets ingevuld.<br>Wees de eerste! 🎯</div>';
+      return;
+    }
+
+    const maxAbs = Math.max(...gesorteerd.map(s=>Math.abs(s.totaal)),1);
+    const posKlassen = ["p1","p2","p3"];
+    const posLabels = ["🥇","🥈","🥉"];
+
+    let html = '<div class="score-sectie-titel">Totaal (dagelijks + WK bets)</div><div class="score-lijst">';
+    gesorteerd.forEach((s,i) => {
+      const kleur = s.totaal>0?"var(--groen)":s.totaal<0?"var(--rood)":"var(--dim)";
+      const balkKleur = s.totaal>0?"#00c97a":s.totaal<0?"#ff4d6a":"#7070a0";
+      const balkB = Math.round((Math.abs(s.totaal)/maxAbs)*100);
+      const isJij = s.naam===mijnNaam;
+      const [avatarBg,avatarTekst] = avatarKleur(s.naam);
+      const heeftBets = s.betNetto !== 0;
+
+      html += `
+        <div class="score-rij${isJij?" jij":""}${i===0?" eerste":""}">
+          <div class="score-positie ${i<3?posKlassen[i]:""}">${i<3?posLabels[i]:i+1}</div>
+          <div class="score-avatar" style="background:${avatarBg};color:${avatarTekst}">${initialen(s.naam)}</div>
+          <div class="score-midden">
+            <div class="score-naam-tekst">${s.naam}${isJij?" <span style='font-size:11px;color:var(--oranje)'>jij</span>":""}</div>
+            <div class="score-naam-sub">${s.dagen} dag${s.dagen!==1?"en":""} gespeeld${heeftBets?" · bets: "+(s.betNetto>=0?"+":"-")+"€"+Math.abs(s.betNetto).toFixed(2).replace(".",","):""}</div>
+          </div>
+          <div class="score-kolommen">
+            <div class="score-netto" style="color:${kleur}">${s.totaal>=0?"+":"-"}€${Math.abs(s.totaal).toFixed(2).replace(".",",")}</div>
+            <div class="score-bar-wrap"><div class="score-bar" style="width:${balkB}%;background:${balkKleur}"></div></div>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+    document.getElementById("scores-inhoud").innerHTML = html;
+  } catch(e) {
+    document.getElementById("scores-inhoud").innerHTML = '<div class="score-leeg">Kon scores niet laden.<br>Controleer je verbinding.</div>';
+  }
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────
+function fmt(n) { return "€"+Math.abs(n).toFixed(2).replace(".",","); }
+function nettoDag(r) {
+  const inzet=parseFloat(r.inzet)||0, terug=parseFloat(r.terug)||0, verlies=parseFloat(r.verlies)||0;
+  return terug>0 ? terug-inzet : -verlies;
+}
+function showToast(msg) {
+  const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2000);
+}
+function updateSaldo() {
+  let totInzet=0,totTerug=0;
+  DAGEN.forEach(d=>{const r=data[d.id]||{};totInzet+=parseFloat(r.inzet)||0;totTerug+=parseFloat(r.terug)||0;});
+  const netto=totTerug-totInzet;
+  document.getElementById("totaal-inzet").textContent=fmt(totInzet);
+  document.getElementById("totaal-terug").textContent=fmt(totTerug);
+  const nEl=document.getElementById("totaal-netto");
+  nEl.textContent=(netto>=0?"+":"-")+fmt(netto);
+  nEl.className="saldo-value "+(netto>0?"pos":netto<0?"neg":"neu");
+}
+function wisselTab(tab) {
+  huidigTab=tab;
+  ["tracker","bets","score"].forEach(t => {
+    document.getElementById("tab-"+t).className="top-tab"+(t===tab?" active":"");
+  });
+  document.getElementById("tracker-view").style.display = tab==="tracker"?"block":"none";
+  document.getElementById("bets-view").style.display    = tab==="bets"?"block":"none";
+  document.getElementById("scorebord").style.display    = tab==="score"?"block":"none";
+  if (tab==="score") laadScores();
+  if (tab==="bets") { bouwBetsLijst(); updateBetsSaldo(); }
+}
+function bouwFaseTabs() {
+  const nav=document.getElementById("fase-nav"); nav.innerHTML="";
+  FASEN.forEach(f=>{
+    const btn=document.createElement("button");
+    btn.className="fase-tab"+(f.key===actiefeFase?" active":"");
+    btn.textContent=f.label;
+    btn.onclick=()=>{actiefeFase=f.key;bouwFaseTabs();bouwLijst();};
+    nav.appendChild(btn);
+  });
+}
+function bouwLijst() {
+  const lijst=document.getElementById("daglijst");
+  const gefilterd=DAGEN.filter(d=>actiefeFase==="alle"||d.fase===actiefeFase||(actiefeFase==="finale"&&["finale","derde","semi"].includes(d.fase)));
+  lijst.innerHTML="";
+  gefilterd.forEach(dag=>{
+    const r=data[dag.id]||{};
+    const heeftData=r.inzet||r.terug||r.verlies;
+    const isOpen=openKaart===dag.id;
+    const nd=nettoDag(r);
+    const kaart=document.createElement("div");
+    kaart.className=`dag-kaart${heeftData?" ingevuld":""}${dag.fase==="finale"?" finale":""}${isOpen?" open":""}`;
+    kaart.id="kaart-"+dag.id;
+    const preview=heeftData?`<span class="dag-resultaat" style="color:${nd>0?"var(--groen)":nd<0?"var(--rood)":"var(--dim)"}">${nd>=0?"+":"-"}${fmt(nd)}</span>`:"";
+    kaart.innerHTML=`
+      <div class="dag-header" id="header-${dag.id}">
+        <div class="dag-info"><span class="dag-datum">${dag.datum}</span><span class="dag-fase fase-${dag.fase}">${dag.faseLabel}</span></div>
+        <div style="display:flex;align-items:center;gap:8px">${preview}<span class="pijl">▾</span></div>
+      </div>
+      <div class="dag-form${isOpen?" zichtbaar":""}" id="form-${dag.id}">
+        <div class="form-rij">
+          <div class="form-veld"><label>Inzet (€)</label><input type="number" inputmode="decimal" placeholder="0" id="inzet-${dag.id}" value="${r.inzet||""}"><div class="snelkeuze" id="snel-${dag.id}"></div></div>
+          <div class="form-veld"><label>Teruggekregen (€)</label><input type="number" inputmode="decimal" placeholder="0" id="terug-${dag.id}" value="${r.terug||""}" class="${r.terug?"groen":""}"></div>
+        </div>
+        <div class="form-rij" style="margin-top:10px">
+          <div class="form-veld"><label>Verlies (€)</label><input type="number" inputmode="decimal" placeholder="0" id="verlies-${dag.id}" value="${r.verlies||""}" class="${r.verlies?"rood":""}"></div>
+          <div></div>
+        </div>
+        <button class="opslaan-btn" id="opslaan-${dag.id}">Opslaan ✓</button>
+        ${heeftData?`<button class="wis-btn" id="wis-${dag.id}">Wissen</button>`:""}
+      </div>`;
+    lijst.appendChild(kaart);
+    const snelDiv=document.getElementById("snel-"+dag.id);
+    SNELKEUZES.forEach(v=>{const btn=document.createElement("button");btn.textContent="€"+v;btn.onclick=e=>{e.stopPropagation();document.getElementById("inzet-"+dag.id).value=v;};snelDiv.appendChild(btn);});
+    document.getElementById("header-"+dag.id).onclick=()=>{openKaart=openKaart===dag.id?null:dag.id;bouwLijst();if(openKaart)setTimeout(()=>document.getElementById("kaart-"+dag.id)?.scrollIntoView({behavior:"smooth",block:"nearest"}),50);};
+    document.getElementById("terug-"+dag.id).oninput=function(){this.className=this.value?"groen":"";};
+    document.getElementById("verlies-"+dag.id).oninput=function(){this.className=this.value?"rood":"";};
+    document.getElementById("opslaan-"+dag.id).onclick=async e=>{
+      e.stopPropagation();const btn=e.target;btn.disabled=true;btn.textContent="Opslaan...";
+      const inzet=parseFloat(document.getElementById("inzet-"+dag.id).value)||0;
+      const terug=parseFloat(document.getElementById("terug-"+dag.id).value)||0;
+      const verlies=parseFloat(document.getElementById("verlies-"+dag.id).value)||0;
+      data[dag.id]={inzet,terug,verlies};
+      try{await slaServerOp(dag.id,inzet,terug,verlies);showToast("Opgeslagen ✓");}catch{showToast("Opgeslagen lokaal");}
+      openKaart=null;updateSaldo();bouwLijst();
+    };
+    const wisBtn=document.getElementById("wis-"+dag.id);
+    if(wisBtn)wisBtn.onclick=async e=>{e.stopPropagation();delete data[dag.id];try{await wisServerRij(dag.id);}catch{}openKaart=null;updateSaldo();bouwLijst();};
+  });
+}
+function wisselNaam(){if(confirm("Andere naam kiezen?")){localStorage.removeItem("wk2026_naam");location.reload();}}
+
+// ── NAAM SCHERM ───────────────────────────────────────────────────────────
+async function laadBestaandeNamen() {
+  try {
+    const rows=await supaFetch("gokken?select=naam");
+    const namen=[...new Set((rows||[]).map(r=>r.naam))].filter(Boolean);
+    const sugsDiv=document.getElementById("naam-sugs");
+    namen.forEach(naam=>{const btn=document.createElement("button");btn.className="naam-sug";btn.textContent=naam;btn.onclick=()=>{document.getElementById("naam-input").value=naam;checkNaamBtn();};sugsDiv.appendChild(btn);});
+  } catch {}
+}
+function checkNaamBtn(){document.getElementById("naam-btn").disabled=document.getElementById("naam-input").value.trim().length<2;}
+document.getElementById("naam-input").oninput=checkNaamBtn;
+document.getElementById("naam-input").onkeydown=e=>{if(e.key==="Enter"&&!document.getElementById("naam-btn").disabled)startApp();};
+document.getElementById("naam-btn").onclick=startApp;
+
+async function startApp() {
+  mijnNaam=document.getElementById("naam-input").value.trim();
+  localStorage.setItem("wk2026_naam",mijnNaam);
+  document.getElementById("naam-scherm").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("naam-badge").textContent=mijnNaam;
+  document.getElementById("bets-naam-badge").textContent=mijnNaam;
+  await Promise.all([laadMijnData(), laadMijnBets()]);
+  bouwFaseTabs(); bouwLijst(); updateSaldo();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+if (mijnNaam) {
+  document.getElementById("naam-scherm").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("naam-badge").textContent=mijnNaam;
+  document.getElementById("bets-naam-badge").textContent=mijnNaam;
+  Promise.all([laadMijnData(),laadMijnBets()]).then(()=>{bouwFaseTabs();bouwLijst();updateSaldo();});
+} else {
+  laadBestaandeNamen();
+}
+</script>
+</body>
+</html>
